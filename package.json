@@ -1,0 +1,46 @@
+{
+  "name": "cinema-tickets-javascript",
+  "description": "This is a coding exercise which will allow you to demonstrate how you code and your approach to a given problem.",
+  "version": "1.0.1",
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "repository":{
+    "type": "git",
+    "url": "https://github.com/dwp/cinema-tickets.git",
+    "directory": "cinema-tickets-javascript"
+  },
+  "author": {
+    "name": "Siddharth Shroff",
+    "email": "siddshroff@gmail.com",
+    "url": "https://github.com/siddshroff"
+  },
+  "license":"ISC",
+  "type": "module",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon --inspect=0.0.0.0:9234 app.js --ignore logs/",
+    "dev:docker": "nodemon --inspect=0.0.0.0:9234 app.js --ignore logs/",
+    "test": "mocha --require ./test/test-setup.js --recursive test --exit",
+    "test:lint": "eslint .",
+    "test:coverage": "nyc --reporter=html --reporter=lcov --timeout=3000 --reporter=text npm run test",
+    "precommit": "eslint . --fix"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "dotenv-safe": "9.1.0",
+    "joi": "17.13.3",
+    "body-parser":"^1.20.3",
+    "express":"^4.21.1",
+    "helmet":"^8.0.0",
+    "nocache": "4.0.0"
+  },
+  "devDependencies": {
+    "chai":"^5.1.1",
+    "eslint": "^9.12.0",
+    "mocha":"^10.7.3",
+    "mock-req-res": "1.2.1",
+    "nodemon": "3.1.7",
+    "sinon": "19.0.2"
+  }
+}
