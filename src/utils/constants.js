@@ -15,4 +15,9 @@ const ErrorCodes = Object.freeze({
   ERRORCT04: "Adult ticket is not present",
   ERRORCT05: "Purchase data is null",
 });
-export { Defaults, TicketTypes, ErrorCodes };
+const TicketPrices = Object.freeze({
+  ADULT: 20,
+  CHILD: 10,
+  INFANT: 0
+})
+export { Defaults, TicketTypes, ErrorCodes, TicketPrices };

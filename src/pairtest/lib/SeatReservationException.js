@@ -1,4 +1,6 @@
-export default class SeatReservationException extends Error {
+import InvalidPurchaseException from "./InvalidPurchaseException.js";
+
+export default class SeatReservationException extends InvalidPurchaseException {
   constructor(error = "Payment Error", originaError = null) {
     super("Internal Server Error");
     this.error = error;
@@ -14,4 +16,3 @@ export default class SeatReservationException extends Error {
     return this.constructor.name;
   }
 }
-// SeatReservationException.prototype.name = "Payment Gateway Error";

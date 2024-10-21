@@ -2,8 +2,10 @@ import TicketTypeRequest from "./lib/TicketTypeRequest.js";
 import InvalidPurchaseException from "./lib/InvalidPurchaseException.js";
 import PaymentGatewayException from "./lib/PaymentGatewayException.js";
 import SeatReservationException from "./lib/SeatReservationException.js";
+import TicketPaymentService from "../thirdparty/paymentgateway/TicketPaymentService.js";
+import SeatReservationService from "../thirdparty/seatbooking/SeatReservationService.js";
 import { logger } from "../utils/logger.js";
-import { TicketTypes, ErrorCodes } from "../utils/constants.js";
+import { Defaults, TicketTypes, ErrorCodes, TicketPrices } from "../utils/constants.js";
 /**
  * This service class for cinema ticket booking application.
  * This exposes the prometheus metrics for the failure events in the methods
@@ -17,9 +19,6 @@ import { TicketTypes, ErrorCodes } from "../utils/constants.js";
 
 export default class TicketService {
   /**
-   * Should only have private methods other than the one below.
-   */
-  /**
    * This is the implementation method which purchase ticket for an account.
    * It takes in two arguments. i.e account ID and object/s of TicketTypeRequest.
    * It makes payment and then reserves the seat according to the request.
@@ -30,21 +29,22 @@ export default class TicketService {
    * @param ticketTypeRequests
    * @throws InvalidPurchaseException
    */
-  purchaseTickets(accountId, ...ticketTypeRequests) {
-    // throws InvalidPurchaseException
+  purchaseTickets(accountId, ticketTypeRequests) {
     let totalAmountToPay = 0,
       totalSeatsToAllocate = 0;
+    const ticketPaymentService = new TicketPaymentService;
+    const seatReservationService = new SeatReservationService;
+
     logger.debug("Validating requests for Account ID::", accountId);
     this.#validateRequest(accountId, ticketTypeRequests);
 
     ticketTypeRequests.forEach((ticketRequest) => {
       totalAmountToPay +=
-        TicketPrices.valueOf(ticketRequest.getTicketType().name()).getPrice() *
+        TicketPrices[ticketRequest.getTicketType()] *
         ticketRequest.getNoOfTickets();
 
       totalSeatsToAllocate += !ticketRequest
-        .getTicketType()
-        .equals(TicketTypes.INFANT)
+        .getTicketType() === TicketTypes.INFANT
         ? ticketRequest.getNoOfTickets()
         : 0;
     });
@@ -54,11 +54,8 @@ export default class TicketService {
       logger.debug("Payment successful for Account ID:: {}", accountId);
     } catch (e) {
       logger.error("Payment gateway failed to process payment", e);
-      failedEventsCounter.inc();
       throw new PaymentGatewayException(
-        ErrorCodes.ERRORCT01,
-        String.format("Payment failed for Account id:: {}", accountId)
-      );
+        ErrorCodes.ERRORCT01, `Payment failed for Account id:: ${accountId}`);
     }
     try {
       logger.debug(
@@ -72,11 +69,8 @@ export default class TicketService {
       );
     } catch (e) {
       logger.error("Seat reservation failed to reserve seat", e);
-      failedEventsCounter.inc();
       throw new SeatReservationException(
-        ErrorCodes.ERRORCT01,
-        String.format("Seat reservation failed for Account id:: {}", accountId)
-      );
+        ErrorCodes.ERRORCT01, `Seat reservation failed for Account id:: ${accountId}`);
     }
   }
 
@@ -89,46 +83,29 @@ export default class TicketService {
    * @param accountId
    * @param ticketTypeRequests
    */
-  #validateRequest(accountId, ...ticketTypeRequests) {
+  #validateRequest(accountId, ticketTypeRequests) {
     if (accountId == null || accountId <= 0) {
-      logger.error("Invalid Account ID:: {}", accountId);
-      failedBusinessValidationCounter.inc();
+      logger.error(`Invalid Account ID:: ${accountId}`);
       throw new InvalidPurchaseException(
-        ErrorCodes.ERRORCT02,
-        String.format("Account id = {} is not a valid data", accountId)
-      );
+        ErrorCodes.ERRORCT02, `Account id = ${accountId} is not a valid data`);
     }
     if (this.#isMaxTicketCountExceeded(ticketTypeRequests)) {
-      logger.error(
-        "Request for maximum number of tickets exceeded",
-        ticketTypeRequests
-      );
-      failedBusinessValidationCounter.inc();
+      logger.error(`Request for maximum number of tickets exceeded:: ${JSON.stringify(ticketTypeRequests)}`);
       throw new InvalidPurchaseException(
-        ErrorCodes.ERRORCT03,
-        String.format(
-          "Max ticket purchase count exceed the limit of = {}",
-          Constants.MAX_TICKETS_ALLOWED
-        )
+        ErrorCodes.ERRORCT03, `Max ticket purchase count exceed the limit of = ${Defaults.MAX_TICKETS_ALLOWED}`
       );
     }
     if (!this.#isAdultTicketPresent(ticketTypeRequests)) {
       logger.error("Request having no adults", ticketTypeRequests);
-      failedBusinessValidationCounter.inc();
       throw new InvalidPurchaseException(
         ErrorCodes.ERRORCT04,
-        String.format(
-          "No adult ticket is present for account id = {}",
-          accountId
-        )
-      );
+        `No adult ticket is present for account id = ${accountId}`);
     }
     if (!this.#isInfantTicketEqualAdultTicket(ticketTypeRequests)) {
       logger.error(
         "Request having more infants than adults",
         ticketTypeRequests
       );
-      failedBusinessValidationCounter.inc();
       throw new InvalidPurchaseException(
         ErrorCodes.ERRORCT04,
         "Adult tickets less than infant tickets for Account ID" + accountId
@@ -143,14 +120,13 @@ export default class TicketService {
    * @param ticketTypeRequests
    * @return boolean value of validation
    */
-  #isMaxTicketCountExceeded(...ticketTypeRequests) {
+  #isMaxTicketCountExceeded(ticketTypeRequests) {
     let totalNoOfTickets = 0;
-    for (let i = 0; i < arguments.length; i++) {
-      if (arguments[i].getTicketType === TicketTypes.INFANT)
-        return ticket.getNoOfTickets;
-      else return 0;
+    for (let i = 0; i < ticketTypeRequests.length; i++) {
+      if (ticketTypeRequests[i].getTicketType() !== TicketTypes.INFANT)
+        totalNoOfTickets += ticketTypeRequests[i].getNoOfTickets();
     }
-    return totalNoOfTickets > Constants.MAX_TICKETS_ALLOWED;
+    return totalNoOfTickets > Defaults.MAX_TICKETS_ALLOWED;
   }
 
   /**
@@ -160,9 +136,9 @@ export default class TicketService {
    * @param ticketTypeRequests
    * @return boolean value of validation
    */
-  #isAdultTicketPresent(...ticketTypeRequests) {
-    return ticketTypeRequests.anyMatch((e) =>
-      e.getTicketType().equals(TicketTypes.ADULT)
+  #isAdultTicketPresent(ticketTypeRequests) {
+    return ticketTypeRequests.find((e) =>
+      e.getTicketType() === TicketTypes.ADULT
     );
   }
 
@@ -173,17 +149,17 @@ export default class TicketService {
    * @param ticketTypeRequests
    * @return boolean value of validation
    */
-  #isInfantTicketEqualAdultTicket(...ticketTypeRequests) {
-    return ticketTypeRequests
-      .filter((e) => e.getTicketType().equals(TicketTypes.ADULT))
-      .map((i) => i.getNoOfTickets())
-      .mapToInt(Integer.intValue)
-      .sum() <
-      Arrays.stream(ticketTypeRequests)
-        .filter((e) => e.getTicketType().equals(TicketTypes.INFANT))
-        .map((i) => i.getNoOfTickets())
-        .mapToInt(Integer.intValue)
-        .sum()
+  #isInfantTicketEqualAdultTicket(ticketTypeRequests) {
+    let tickets = ticketTypeRequests;
+    return tickets
+      .filter((e) => e.getTicketType() === TicketTypes.ADULT)
+      .reduce((sum, i) => {
+        sum + i.getNoOfTickets(), 0
+      })
+      <
+      tickets
+        .filter((e) => e.getTicketType() === TicketTypes.INFANT)
+        .reduce((sum, i) => sum + i.getNoOfTickets(), 0)
       ? false
       : true;
   }
