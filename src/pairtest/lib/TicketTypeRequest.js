@@ -3,6 +3,7 @@
  */
 
 export default class TicketTypeRequest {
+  /* eslint-disable-next-line*/
   #type;
 
   #noOfTickets;

@@ -36,6 +36,7 @@ export default class TicketService {
     const seatReservationService = new SeatReservationService;
 
     logger.debug(`Validating requests for Account ID:: ${accountId}`);
+    /* eslint-disable-next-line*/
     this.#validateRequest(accountId, ticketTypeRequests);
 
     ticketTypeRequests.forEach((ticketRequest) => {
