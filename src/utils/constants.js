@@ -19,5 +19,8 @@ const TicketPrices = Object.freeze({
   ADULT: 20,
   CHILD: 10,
   INFANT: 0
-})
-export { Defaults, TicketTypes, ErrorCodes, TicketPrices };
+});
+const Metrics = Object.freeze({
+  METRICS_PREFIX: 'cinema_ticket_',
+});
+export { Defaults, TicketTypes, ErrorCodes, TicketPrices, Metrics };

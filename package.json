@@ -5,7 +5,7 @@
   "engines": {
     "node": ">=20.9.0"
   },
-  "repository":{
+  "repository": {
     "type": "git",
     "url": "https://github.com/dwp/cinema-tickets.git",
     "directory": "cinema-tickets-javascript"
@@ -15,29 +15,43 @@
     "email": "siddshroff@gmail.com",
     "url": "https://github.com/siddshroff"
   },
-  "license":"ISC",
+  "license": "ISC",
   "type": "module",
   "scripts": {
-    "start": "node app.js",
     "dev": "nodemon --inspect=0.0.0.0:9234 app.js --ignore logs/",
     "dev:docker": "nodemon --inspect=0.0.0.0:9234 app.js --ignore logs/",
-    "test": "mocha --recursive test --exit",
-    "test:lint": "eslint .",
-    "test:coverage": "nyc --reporter=html --reporter=lcov --timeout=3000 --reporter=text npm run test",
-    "precommit": "eslint . --fix"
+    "pipeline": "npm run test && npm run security && npm run compliance",
+    "test": "npm run test:unit && npm run test:coverage",
+    "test:unit": "mocha --recursive test --exit",
+    "test:coverage": "c8 node_modules/.bin/mocha --recursive test --exit",
+    "security": "npm run security:lockfile && npm run security:audit && npm run security:outdated",
+    "security:audit": "npm audit",
+    "security:lockfile": "lockfile-lint --path package-lock.json --validate-https",
+    "security:outdated": "npm outdated",
+    "compliance": "npm run compliance:lint && npm run compliance:commits && compliance:licenses",
+    "compliance:lint": "npx eslint .",
+    "compliance:commits": "commitlint --from=master --to=HEAD",
+    "compliance:licenses": "license-checker --onlyAllow 'MIT;ISC;Apache;WTFPL;BSD;LGPL;CC-BY-3.0;CC-BY-4.0;CC0-1.0;Unlicense;Public'",
+    "precommit": "npx eslint . --fix"
   },
   "dependencies": {
-    "dotenv": "^16.4.5",
-    "dotenv-safe": "9.1.0",
     "prom-client": "^15.1.3",
     "winston": "3.15.0"
   },
   "devDependencies": {
-    "chai":"^5.1.1",
+    "@commitlint/cli": "^19.5.0",
+    "@commitlint/config-conventional": "^19.5.0",
+    "@eslint/js": "^9.13.0",
+    "eslint-plugin-jsdoc": "^50.4.3",
+    "chai": "^5.1.1",
     "eslint": "^9.13.0",
-    "mocha":"^10.7.3",
-    "nyc": "^17.1.0",
+    "eslint-config-defaults": "^9.0.0",
+    "globals": "^15.11.0",
+    "license-checker": "^25.0.1",
+    "lockfile-lint": "^4.14.0",
+    "mocha": "^10.7.3",
     "nodemon": "3.1.7",
+    "c8": "^10.1.2",
     "sinon": "19.0.2"
   }
 }
