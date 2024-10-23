@@ -71,7 +71,7 @@ describe("Ticket Service Testing", async () => {
     Sinon.spy(SeatReservationService.prototype, "reserveSeat");
     const objTicket = new TicketService;
     expect(objTicket.purchaseTickets(1, new TicketTypeRequest('ADULT', 8), new TicketTypeRequest('CHILD', 8))).to.not.throw;
-    assert.equal(240, TicketPaymentService.prototype.makePayment.args[0][1]);
+    assert.equal(320, TicketPaymentService.prototype.makePayment.args[0][1]);
     assert.equal(16, SeatReservationService.prototype.reserveSeat.args[0][1]);
   });
   it("Valid payload of tickets with success payment and seat reservation with infants", () => {
@@ -79,7 +79,7 @@ describe("Ticket Service Testing", async () => {
     Sinon.spy(SeatReservationService.prototype, "reserveSeat");
     const objTicket = new TicketService;
     expect(objTicket.purchaseTickets(1, new TicketTypeRequest('ADULT', 8), new TicketTypeRequest('INFANT', 8))).to.not.throw;
-    assert.equal(160, TicketPaymentService.prototype.makePayment.args[0][1]);
+    assert.equal(200, TicketPaymentService.prototype.makePayment.args[0][1]);
     assert.equal(8, SeatReservationService.prototype.reserveSeat.args[0][1]);
   });
 
